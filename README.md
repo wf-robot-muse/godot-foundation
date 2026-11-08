@@ -5,11 +5,14 @@ A foundation project for game development with **Godot 4.7** and **Voxel Tools
 GitHub-only process as the iOS, Android, and Tauri foundations in this account.
 
 The starter content is a small but real voxel demo: a streaming blocky terrain
-(`VoxelLodTerrain`) with rolling hills generated around a viewer that slowly
-orbits the world, with four voxel types (air, grass, dirt, stone — grass
-surface, dirt beneath, stone below that). Everything in the demo is built in
-code (`scripts/main.gd`), so the project is plain text throughout — no
-hand-authored binary resources.
+(`VoxelLodTerrain`) with rolling hills, explored with a fly camera, with four
+voxel types (air, grass, dirt, stone — grass surface, dirt beneath, stone
+below that). Everything in the demo is built in code (`scripts/main.gd`), so
+the project is plain text throughout — no hand-authored binary resources.
+
+**Controls:** click the window to capture the mouse, then WASD to move,
+mouse to look, E/Q for up/down, Shift for speed, Esc to release the mouse.
+The terrain streams in around the camera as you fly.
 
 ## What's pinned
 
@@ -27,8 +30,9 @@ this repo exactly as released (all platform binaries included), so stock Godot
 
 - `project.godot` — Godot project (main scene `scenes/main.tscn`).
 - `scripts/main.gd` — builds the demo world at runtime: environment, blocky
-  voxel library (air/grass/stone/dirt), blocky mesher, LOD terrain, and an
-  orbiting camera + `VoxelViewer`.
+  voxel library (air/grass/stone/dirt), blocky mesher, LOD terrain, and a
+  fly camera (WASD + mouse) carrying the `VoxelViewer`, plus an on-screen
+  controls hint.
 - `scripts/terrain_generator.gd` — custom rolling-hills generator
   (`VoxelGeneratorScript`) writing the TYPE channel: grass surface, dirt
   beneath, stone below. (The built-in heightmap generators write SDF for the
