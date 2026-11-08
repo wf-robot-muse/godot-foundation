@@ -5,9 +5,11 @@ A foundation project for game development with **Godot 4.7** and **Voxel Tools
 GitHub-only process as the iOS, Android, and Tauri foundations in this account.
 
 The starter content is a small but real voxel demo: a streaming blocky terrain
-(`VoxelLodTerrain`) generated around a viewer, with three voxel types (air,
-grass, stone). Everything in the demo is built in code (`scripts/main.gd`), so
-the project is plain text throughout — no hand-authored binary resources.
+(`VoxelLodTerrain`) with rolling hills generated around a viewer that slowly
+orbits the world, with four voxel types (air, grass, dirt, stone — grass
+surface, dirt beneath, stone below that). Everything in the demo is built in
+code (`scripts/main.gd`), so the project is plain text throughout — no
+hand-authored binary resources.
 
 ## What's pinned
 
@@ -25,8 +27,12 @@ this repo exactly as released (all platform binaries included), so stock Godot
 
 - `project.godot` — Godot project (main scene `scenes/main.tscn`).
 - `scripts/main.gd` — builds the demo world at runtime: environment, blocky
-  voxel library (air/grass/stone), flat generator, blocky mesher, LOD terrain,
-  camera + `VoxelViewer`.
+  voxel library (air/grass/stone/dirt), blocky mesher, LOD terrain, and an
+  orbiting camera + `VoxelViewer`.
+- `scripts/terrain_generator.gd` — custom rolling-hills generator
+  (`VoxelGeneratorScript`) writing the TYPE channel: grass surface, dirt
+  beneath, stone below. (The built-in heightmap generators write SDF for the
+  smooth mesher, so blocky terrain needs this.)
 - `scripts/smoke_test.gd` + `scenes/smoke_test.tscn` — headless smoke test:
   loads the real demo scene, waits for the terrain to generate and mesh
   blocks, prints `SMOKE PASS` / `SMOKE FAIL`, exits 0 / 1.
