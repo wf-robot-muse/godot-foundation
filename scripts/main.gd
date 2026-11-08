@@ -6,15 +6,18 @@ extends Node3D
 ## (scripts/terrain_generator.gd) and a blocky mesher with four voxel types
 ## (air, grass, stone, dirt). Everything is created in code so the whole
 ## project stays plain text and CI-friendly — there are no hand-authored
-## binary resources to drift out of sync. The camera slowly orbits the
-## terrain so the streaming and meshing are visible in motion.
+## binary resources to drift out of sync. Navigation is a fly camera:
+## click to capture the mouse, WASD to move, E/Q for up/down, Shift for
+## speed, Esc to release.
 
 const GRASS_TYPE := 1
 const STONE_TYPE := 2
 const DIRT_TYPE := 3
 
 var terrain: VoxelLodTerrain
-var _camera_pivot: Node3D
+var _camera: Camera3D
+var _yaw := 0.0
+var _pitch := 0.0
 
 
 func _ready() -> void:
@@ -88,22 +91,68 @@ func _build_terrain() -> VoxelLodTerrain:
 
 
 func _build_camera() -> void:
-	# The camera rides a slowly rotating pivot so the demo is in motion and
-	# the terrain visibly streams as the viewpoint travels.
-	_camera_pivot = Node3D.new()
-	_camera_pivot.position = Vector3(0.0, 4.0, 0.0)
-	add_child(_camera_pivot)
-	var camera := Camera3D.new()
-	camera.position = Vector3(30.0, 20.0, 38.0)
-	_camera_pivot.add_child(camera)
-	camera.look_at(Vector3(0.0, 2.0, 0.0), Vector3.UP)
-	camera.current = true
+	_camera = Camera3D.new()
+	_camera.position = Vector3(30.0, 20.0, 38.0)
+	add_child(_camera)
+	_camera.look_at(Vector3(0.0, 2.0, 0.0), Vector3.UP)
+	_camera.current = true
+	# Derive yaw/pitch from the initial view direction so mouse look
+	# continues smoothly from the starting framing.
+	var forward := -_camera.global_transform.basis.z.normalized()
+	_pitch = asin(clampf(forward.y, -1.0, 1.0))
+	_yaw = atan2(-forward.x, -forward.z)
 	# The viewer tells the terrain where to stream blocks around.
 	var viewer := VoxelViewer.new()
 	viewer.view_distance = 96
-	camera.add_child(viewer)
+	_camera.add_child(viewer)
+	_build_hud()
+
+
+func _build_hud() -> void:
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	var label := Label.new()
+	label.text = "Click to look around — WASD move · E/Q up/down · Shift fast · Esc release"
+	label.position = Vector2(16.0, 12.0)
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	layer.add_child(label)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_yaw -= event.relative.x * 0.0025
+		_pitch = clampf(_pitch - event.relative.y * 0.0025, -1.45, 1.45)
+		_camera.rotation = Vector3(_pitch, _yaw, 0.0)
 
 
 func _process(delta: float) -> void:
-	if _camera_pivot != null:
-		_camera_pivot.rotate_y(delta * 0.08)
+	if _camera == null or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	var input_dir := Vector3.ZERO
+	if Input.is_physical_key_pressed(KEY_W):
+		input_dir.z -= 1.0
+	if Input.is_physical_key_pressed(KEY_S):
+		input_dir.z += 1.0
+	if Input.is_physical_key_pressed(KEY_A):
+		input_dir.x -= 1.0
+	if Input.is_physical_key_pressed(KEY_D):
+		input_dir.x += 1.0
+	if Input.is_physical_key_pressed(KEY_E) or Input.is_physical_key_pressed(KEY_SPACE):
+		input_dir.y += 1.0
+	if Input.is_physical_key_pressed(KEY_Q):
+		input_dir.y -= 1.0
+	if input_dir == Vector3.ZERO:
+		return
+	var speed := 20.0
+	if Input.is_physical_key_pressed(KEY_SHIFT):
+		speed = 60.0
+	var basis := _camera.global_transform.basis
+	var velocity := basis * Vector3(input_dir.x, 0.0, input_dir.z) + Vector3(0.0, input_dir.y, 0.0)
+	_camera.position += velocity.normalized() * speed * delta
+	_camera.position.y = maxf(_camera.position.y, 1.0)
